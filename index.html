@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pass - Gestor de Contraseñas</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>Pass</h1>
+      <div id="login-section">
+        <div class="card">
+          <h2>Bienvenido</h2>
+          <p class="description">
+            Introduce tu clave maestra para acceder a tu bóveda. Esta clave no
+            se guarda en ningún sitio.
+          </p>
+          <div class="input-group">
+            <input
+              type="password"
+              id="master-key-input"
+              placeholder="Clave Maestra"
+            />
+            <button id="login-btn">Acceder</button>
+          </div>
+          <div id="login-message" class="message"></div>
+        </div>
+
+        <div class="file-import">
+          <p class="description">¿Tienes un archivo de contraseñas?</p>
+          <label for="import-file" class="import-label">
+            Importar archivo
+            <input
+              type="file"
+              id="import-file"
+              class="hidden-input"
+              accept=".json"
+            />
+          </label>
+        </div>
+        <div id="import-message" class="message"></div>
+      </div>
+      <div id="manager-section" class="hidden">
+        <button id="add-new-password-btn" class="add-new-btn">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="icon-md"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+          Añadir Nueva Contraseña
+        </button>
+
+        <div id="add-form-container" class="card hidden">
+          <button id="close-add-form-btn" class="close-btn">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="icon-sm"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+          <h2>Añadir Nueva Contraseña</h2>
+          <input
+            type="text"
+            id="service-input"
+            placeholder="Servicio (ej. Google, Facebook)"
+            class="full-width-input"
+          />
+          <input
+            type="text"
+            id="username-input"
+            placeholder="Nombre de usuario"
+            class="full-width-input"
+          />
+          <div class="input-group-relative">
+            <input
+              type="password"
+              id="password-input"
+              placeholder="Contraseña"
+              class="full-width-input"
+            />
+            <button id="toggle-password-form" class="toggle-password-btn">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="icon-sm"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.575 3.01 9.963 7.823a1.012 1.012 0 010 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.575-3.01-9.963-7.823z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
+          </div>
+          <input
+            type="text"
+            id="tag-input"
+            placeholder="Etiqueta (ej. trabajo, personal)"
+            class="full-width-input"
+          />
+          <button id="save-btn" class="full-width-btn">Guardar</button>
+        </div>
+        <div class="card">
+          <div class="list-header">
+            <h2>Tus Contraseñas</h2>
+            <label class="checkbox-container">
+              <input type="checkbox" id="select-all-checkbox" />
+              Seleccionar todo
+            </label>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Buscar..."
+              class="search-input"
+            />
+          </div>
+          <div id="passwords-list"></div>
+        </div>
+        <div class="export-section">
+          <p class="description">Exportar contraseñas seleccionadas</p>
+          <button id="export-btn" class="export-btn" disabled>Exportar</button>
+        </div>
+      </div>
+
+      <div id="modal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <p id="modal-message"></p>
+          <button id="modal-close-btn" class="modal-btn">OK</button>
+        </div>
+      </div>
+    </div>
+    <script src="./js/script.js" type="module"></script>
+  </body>
+</html>
