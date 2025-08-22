@@ -22,9 +22,12 @@ const modalMessage = document.getElementById("modal-message");
 const modalCloseBtn = document.getElementById("modal-close-btn");
 const togglePasswordFormBtn = document.getElementById("toggle-password-form");
 
+const DB_NAME = "PasswordManagerDB";
+const DB_VERSION = 1;
+const STORE_NAME = "passwords";
 const salt = "password-manager-salt";
 let masterKey = "";
-let passwords = [];
+let db = null;
 
 function showMessage(element, text, isError = false) {
   element.textContent = text;
@@ -45,30 +48,114 @@ function decrypt(ciphertext, key) {
   return bytes.toString(CryptoJS.enc.Utf8);
 }
 
-function loadPasswords(key) {
-  const encryptedData = localStorage.getItem("passwords");
-  if (!encryptedData) {
-    return [];
-  }
-  try {
-    const decryptedData = decrypt(encryptedData, key);
-    return JSON.parse(decryptedData);
-  } catch (e) {
-    return null;
-  }
+function initDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = (event) => {
+      console.error("Error al abrir la base de datos", event.target.error);
+      reject(event.target.error);
+    };
+
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const objectStore = db.createObjectStore(STORE_NAME, {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+        objectStore.createIndex("service", "service", { unique: false });
+      }
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      resolve(db);
+    };
+  });
 }
 
-function savePasswords() {
-  try {
-    const encryptedData = encrypt(JSON.stringify(passwords), masterKey);
-    localStorage.setItem("passwords", encryptedData);
-  } catch (e) {
-    showModal("Error al guardar las contraseñas.");
-  }
+async function loadPasswords() {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject("Database not initialized");
+      return;
+    }
+
+    const transaction = db.transaction([STORE_NAME], "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.getAll();
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+
+    request.onsuccess = (event) => {
+      try {
+        const encryptedData = event.target.result;
+        const decryptedPasswords = encryptedData.map((p) => {
+          return {
+            id: p.id,
+            service: decrypt(p.service, masterKey),
+            username: decrypt(p.username, masterKey),
+            password: p.password, // Mantener encriptada
+            tag: decrypt(p.tag, masterKey),
+          };
+        });
+        resolve(decryptedPasswords);
+      } catch (e) {
+        reject(e);
+      }
+    };
+  });
 }
 
-function renderPasswords(filter = "") {
+async function savePasswordToDb(passwordObj) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
+    const encryptedObj = {
+      service: encrypt(passwordObj.service, masterKey),
+      username: encrypt(passwordObj.username, masterKey),
+      password: encrypt(passwordObj.password, masterKey),
+      tag: encrypt(passwordObj.tag, masterKey),
+    };
+
+    const request = store.put(encryptedObj);
+
+    request.onerror = (event) => reject(event.target.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+async function deletePasswordFromDb(id) {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+
+    request.onerror = (event) => reject(event.target.error);
+    request.onsuccess = () => resolve();
+  });
+}
+
+let passwords = [];
+
+async function renderPasswords(filter = "") {
   passwordsList.innerHTML = "";
+
+  if (!db) {
+    await initDb();
+  }
+
+  try {
+    passwords = await loadPasswords();
+  } catch (e) {
+    showModal("Error al cargar las contraseñas. Clave incorrecta.");
+    return;
+  }
+
   const filteredPasswords = passwords.filter(
     (p) =>
       p.service.toLowerCase().includes(filter.toLowerCase()) ||
@@ -86,14 +173,14 @@ function renderPasswords(filter = "") {
     return;
   }
 
-  filteredPasswords.forEach((p, index) => {
+  filteredPasswords.forEach((p) => {
     const item = document.createElement("div");
     item.classList.add("password-item");
-    item.dataset.index = index;
+    item.dataset.id = p.id;
     item.innerHTML = `
             <div class="password-content">
                 <div class="password-title">
-                    <input type="checkbox" class="password-checkbox" data-index="${index}">
+                    <input type="checkbox" class="password-checkbox" data-id="${p.id}">
                     ${p.service}
                     <span class="tag tag-blue">${p.tag}</span>
                 </div>
@@ -130,7 +217,7 @@ function updateExportButtonState() {
   exportBtn.disabled = !anyChecked;
 }
 
-loginBtn.addEventListener("click", () => {
+loginBtn.addEventListener("click", async () => {
   const enteredKey = masterKeyInput.value.trim();
   if (!enteredKey) {
     showMessage(loginMessage, "La clave maestra no puede estar vacía.", true);
@@ -142,16 +229,16 @@ loginBtn.addEventListener("click", () => {
     iterations: 1000,
   }).toString();
 
-  const loadedPasswords = loadPasswords(masterKey);
-  if (loadedPasswords !== null) {
-    passwords = loadedPasswords;
+  try {
+    await initDb();
+    await loadPasswords();
     loginSection.classList.add("hidden");
     managerSection.classList.remove("hidden");
     renderPasswords();
-  } else {
+  } catch (e) {
     showMessage(
       loginMessage,
-      "Clave maestra incorrecta. Inténtalo de nuevo.",
+      "Clave maestra incorrecta o error de base de datos.",
       true
     );
   }
@@ -171,7 +258,7 @@ closeAddFormBtn.addEventListener("click", () => {
   tagInput.value = "";
 });
 
-saveBtn.addEventListener("click", () => {
+saveBtn.addEventListener("click", async () => {
   const service = serviceInput.value.trim();
   const username = usernameInput.value.trim();
   const password = passwordInput.value.trim();
@@ -182,16 +269,9 @@ saveBtn.addEventListener("click", () => {
     return;
   }
 
-  const encryptedPassword = encrypt(password, masterKey);
+  const passwordObj = { service, username, password, tag };
+  await savePasswordToDb(passwordObj);
 
-  passwords.push({
-    service: service,
-    username: username,
-    password: encryptedPassword,
-    tag: tag,
-  });
-
-  savePasswords();
   renderPasswords(searchInput.value);
 
   serviceInput.value = "";
@@ -202,18 +282,17 @@ saveBtn.addEventListener("click", () => {
   addPasswordBtn.classList.remove("hidden");
 });
 
-passwordsList.addEventListener("click", (e) => {
+passwordsList.addEventListener("click", async (e) => {
   const item = e.target.closest(".password-item");
   if (!item) return;
 
-  const index = parseInt(item.dataset.index);
+  const id = parseInt(item.dataset.id);
 
   if (e.target.closest(".delete-btn")) {
-    passwords.splice(index, 1);
-    savePasswords();
+    await deletePasswordFromDb(id);
     renderPasswords(searchInput.value);
   } else if (e.target.closest(".copy-btn")) {
-    const encryptedPassword = passwords[index].password;
+    const encryptedPassword = passwords.find((p) => p.id === id).password;
     const decryptedPassword = decrypt(encryptedPassword, masterKey);
     const el = document.createElement("textarea");
     el.value = decryptedPassword;
@@ -277,19 +356,25 @@ togglePasswordFormBtn.addEventListener("click", () => {
   passwordInput.type = currentType === "password" ? "text" : "password";
 });
 
-importFile.addEventListener("change", (e) => {
+importFile.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = function (event) {
+  reader.onload = async function (event) {
     try {
       const encryptedData = event.target.result;
       const decryptedData = decrypt(encryptedData, masterKey);
       const importedPasswords = JSON.parse(decryptedData);
       if (Array.isArray(importedPasswords)) {
-        passwords = importedPasswords;
-        savePasswords();
+        const transaction = db.transaction([STORE_NAME], "readwrite");
+        const store = transaction.objectStore(STORE_NAME);
+        store.clear();
+
+        for (const p of importedPasswords) {
+          await savePasswordToDb(p);
+        }
+
         renderPasswords(searchInput.value);
         showMessage(importMessage, "Archivo importado con éxito!");
       } else {
@@ -306,12 +391,12 @@ importFile.addEventListener("change", (e) => {
   reader.readAsText(file);
 });
 
-exportBtn.addEventListener("click", () => {
+exportBtn.addEventListener("click", async () => {
   const selectedPasswords = Array.from(
     document.querySelectorAll(".password-checkbox:checked")
   ).map((cb) => {
-    const index = parseInt(cb.dataset.index);
-    return passwords[index];
+    const id = parseInt(cb.dataset.id);
+    return passwords.find((p) => p.id === id);
   });
 
   const dataStr = JSON.stringify(selectedPasswords);

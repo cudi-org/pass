@@ -13,6 +13,14 @@
   --color-white: #fff;
 }
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
 body {
   font-family: "Inter", sans-serif;
   background-color: var(--gris-fondo);
@@ -20,19 +28,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 1rem;
   box-sizing: border-box;
+  padding: 1rem;
 }
 
 #app {
   background-color: var(--color-white);
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
   width: 100%;
   max-width: 48rem;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -84,6 +92,7 @@ h2 {
   border: 1px solid var(--color-border);
   color: var(--color-texto);
   outline: none;
+  box-sizing: border-box;
 }
 
 .input-group input:focus,
@@ -159,6 +168,7 @@ h2 {
   width: 1.5rem;
   height: 1.5rem;
 }
+
 .icon-md {
   width: 1.25rem;
   height: 1.25rem;
@@ -174,14 +184,17 @@ h2 {
 
 .file-import {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
   margin-top: 1.5rem;
 }
 
 .import-label {
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
+  width: 100%;
+  text-align: center;
 }
 
 .message {
@@ -192,37 +205,20 @@ h2 {
 
 .list-header {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .search-input {
-  flex: 1;
+  width: 100%;
   padding: 0.5rem;
   border-radius: 0.5rem;
   background-color: var(--color-white);
   border: 1px solid var(--color-border);
   color: var(--color-texto);
   outline: none;
-}
-
-.button-group {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.select-btn {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.75rem;
-  background-color: #f3f4f6;
-  color: var(--color-gris);
-  border: 1px solid #d1d5db;
-}
-.select-btn:hover {
-  background-color: #e5e7eb;
+  box-sizing: border-box;
 }
 
 .password-item {
@@ -253,6 +249,7 @@ h2 {
 .password-item p {
   font-size: 0.875rem;
   color: #4b5563;
+  margin: 0;
 }
 
 .password-item.selected p {
@@ -264,8 +261,10 @@ h2 {
   font-weight: 600;
   color: var(--color-texto);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .password-item.selected .password-title {
@@ -277,6 +276,7 @@ h2 {
   font-size: 0.75rem;
   font-weight: 700;
   border-radius: 9999px;
+  white-space: nowrap;
 }
 
 .tag-blue {
@@ -307,7 +307,8 @@ h2 {
 .actions {
   display: flex;
   gap: 0.5rem;
-  align-self: flex-end;
+  align-self: flex-start;
+  margin-top: 0.5rem;
 }
 
 .action-btn {
@@ -338,8 +339,14 @@ h2 {
   border: 1px solid #e5e7eb;
   margin-top: 1.5rem;
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.export-btn {
+  width: 100%;
 }
 
 .export-btn:disabled {
@@ -367,6 +374,7 @@ h2 {
   justify-content: center;
   padding: 1rem;
   z-index: 50;
+  box-sizing: border-box;
 }
 
 .modal-content {
@@ -377,6 +385,7 @@ h2 {
   max-width: 24rem;
   width: 100%;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .modal-content p {
@@ -394,17 +403,38 @@ h2 {
   .input-group {
     flex-direction: row;
   }
+  .file-import {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .import-label {
+    width: auto;
+  }
   .password-item {
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
   }
   .list-header {
+    flex-direction: row;
     flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
   }
   .search-input {
-    margin: 0;
+    flex: 1;
+    margin-left: 1rem;
   }
   .actions {
     align-self: center;
+    margin-top: 0;
+  }
+  .export-section {
+    flex-direction: row;
+    align-items: center;
+  }
+  .export-btn {
+    width: auto;
   }
 }
